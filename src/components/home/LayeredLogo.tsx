@@ -1,0 +1,205 @@
+import { useMemo } from 'react'
+
+/** Path `d` values from `public/answr logo dark.svg`    do not redraw. */
+const PATHS = {
+  tl: 'm0.27226,922.32952l-0.272,-589.489c-0.042,-70.664 5.043,-117.006 41.713,-179.666c42.415,-72.479 110.233,-122.575 191.147,-144.74c40.114,-10.988 92.786,-8.092 134.499,-8.083l130.885,-0.007l462.38,0.183c-22.28,7.588 -75.28,9.186 -100.52,11.299c-52.85,4.425 -112.44,21.837 -154.28,55.02c-6.27,4.973 -13.37,9.934 -18.57,15.927c-4.44,4.071 -7.56,7.689 -11.54,12.226c-4.76,1.787 -17.21,20.202 -20.7,25.071c-18.07,25.258 -33.11,61.016 -40.44,91.216c-14.49,59.648 -1.65,147.627 -38.06,198.422c-30.902,43.105 -84.678,55.995 -134.431,58.313c-21.231,0.99 -36.041,0.337 -57.563,3.271c-108.879,14.846 -189.079,73.31 -222.108,180.219c-4.869,15.76 -11.739,55.316 -13.313,71.832c-4.732,49.65 -0.846,104.358 -32.786,146.628c-20.468,27.089 -48.632,39.478 -80.936,47.258c-8.246,1.98 -25.874,3.74 -35.105,5.1z',
+  tr: 'm1118.50426,32.00152c2.36,0.924 4.68,1.933 6.96,3.024c62.44,29.724 124.16,101.216 146.35,166.312c11.9,34.174 18.11,70.07 18.37,106.254c0.08,6.473 0.63,17.374 -2.12,22.956c-13.08,7.731 -81.99,9.316 -101.85,11.811c-13.42,1.685 -29.56,4.274 -43.23,6.458c-17.3,3.252 -60.58,16.29 -74.11,26.296c-24.36,9.526 -52.97,35.006 -70.12,54.856c-46.79,54.155 -61.96,118.397 -65.66,188.443c-1.95,36.921 -3.84,82.064 -25.22,115.08c-52.65,81.283 -149.03,52.706 -227.8,72.919c-15.17,3.915 -31.9,8.363 -46.17,14.237c-106.402,43.795 -156.223,148.362 -155.842,259.172c0.102,29.88 -9.735,84.44 -25.83,110.96c-37.891,62.43 -129.8151,76.1453 -193.9741,79.8653c-23.42,1.34 -9.81277,0.80578 -67.05861,-0.52745c-6.338,0.46 -37.39029,-20.27785 -45.14529,-25.06785c-59.613,-37.11 -105.241,-92.93 -129.741,-158.74c-5.195,-14.28 -8.591,-29.25 -12.077,-44.04c16.465,-3.63 29.988,-4.73 46.311,-7.28c37.162,-5.82 73.376,-20.99 104.431,-42.14c72.411,-49.31 100.018,-121.021 108.272,-205.287c4.765,-50.736 1.773,-103.449 34.155,-146.398c49.167,-66.227 141.137,-49.723 213.241,-63.188c123.448,-23.054 199.068,-116.821 208.668,-240.075c4.1,-52.595 2.32,-113.567 36.72,-157.277c35.51,-45.114 101.35,-52.551 154.78,-53.138c76.16,-2.61 160.55,-32.721 207.69,-95.485z',
+  br: 'm1280.61426,451.65052l9.81,-0.961c-1.11,19.172 -0.06,40.868 0.17,60.189l0.28,90.07l-0.89,333.391c-0.03,28.43 1.13,62.18 -2.23,89.85c-15.26,125.57 -116.84,234.98 -240.83,259.79c-30.07,6.02 -58.52,5.14 -89.05,5.19l-90.92,0.08l-327.023,-0.19l-14.76,-0.33c8.732,-9.54 19.053,-25 25.798,-35.77c17.388,-27.32 29.362,-57.74 35.269,-89.58c11.486,-59.13 4.2,-137.05 35.546,-186.55c47.55,-75.09 140.52,-54.42 217.12,-70.07c120.79,-24.673 192.66,-106.956 208.56,-228.232c7.24,-55.238 -3.21,-109.515 31.05,-159.384c49.83,-72.527 129.23,-53.689 202.1,-67.493z',
+  s1: 'm361.02726,819.32252l111.579,-0.004c0.646,36.604 0.174,74.653 0.203,111.371l-111.595,-0.1l-0.187,-111.267z',
+  s2: 'm588.88926,591.22652c36.705,0.497 74.025,0.264 110.785,0.356c0.68,36.471 0.27,74.258 0.29,110.832c-32.63,-1.447 -77.99,-0.402 -111.125,0.12c-0.852,-36.115 -0.132,-75.056 0.05,-111.308z',
+  s3: 'm818.78426,362.15652c35.94,-0.693 73.47,-0.237 109.48,-0.123l0.16,110.02c-9.98,-0.749 -27.34,-0.177 -37.7,-0.156l-71.96,0.145l0.02,-109.886z',
+} as const
+
+type LayerDef = {
+  ids: ReadonlyArray<keyof typeof PATHS>
+  top: string
+  side: string
+  edge: string
+}
+
+/** Bottom → top: br, tr, tl, gold unit.
+ * Top outline is always muted blue-grey #9fb0c7 (never near-white). */
+const EDGE = '#9fb0c7'
+const LAYERS: readonly LayerDef[] = [
+  { ids: ['br'], top: '#1e3149', side: '#0e1928', edge: EDGE },
+  { ids: ['tr'], top: '#1e3149', side: '#0e1928', edge: EDGE },
+  { ids: ['tl'], top: '#1e3149', side: '#0e1928', edge: EDGE },
+  { ids: ['s1', 's2', 's3'], top: '#cc9c42', side: '#7a5c22', edge: EDGE },
+]
+
+/** Same tilt as `Answr logo in 3D.html` (rotateX 58deg). */
+const ROTATE_X_DEG = 58
+const ROTATE_X = (ROTATE_X_DEG * Math.PI) / 180
+const COS_X = Math.cos(ROTATE_X)
+const TAN_X = Math.tan(ROTATE_X)
+
+/** Default stack density    enough copies + small step = solid side face */
+const DEFAULT_SLICES = 12
+
+function hexAlpha(hex: string, alpha: number): string {
+  const a = Math.round(Math.min(1, Math.max(0, alpha)) * 255)
+    .toString(16)
+    .padStart(2, '0')
+  return `${hex}${a}`
+}
+
+export type LayeredLogoProps = {
+  /** 0 = assembled, 1 = planes fully separated */
+  progress: number
+  focusIndex?: number | null
+  /** World rotateZ in degrees (HTML demo default ~-40). */
+  rotateZ?: number
+  /** Stacked copies for slab thickness (12+ with small step reads as one face). */
+  sliceCount?: number
+  scrubbing?: boolean
+  className?: string
+}
+
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n))
+}
+
+/**
+ * Side / isometric view without CSS preserve-3d (sticky parents flatten that).
+ *
+ * Matches the HTML demo’s rotateX(58°) + translateZ stacks by:
+ * 1. scaleY(cos 58°)    foreshorten the face (you look from above/side)
+ * 2. translateY(-z · tan 58°) per copy    lift along the projected Z axis
+ * 3. rotate(rotateZ)    yaw like the reference
+ *
+ * Stroke rule: ONLY the top slice gets the bright edge outline. Lower
+ * slices use side fill + a faint side-coloured stroke (or none) so the
+ * slab edge reads solid    never bright strokes on every copy.
+ */
+export default function LayeredLogo({
+  progress,
+  focusIndex = null,
+  rotateZ = 12,
+  sliceCount = DEFAULT_SLICES,
+  scrubbing = false,
+  className,
+}: LayeredLogoProps) {
+  const gap = clamp01(progress)
+  const slices = Math.max(9, sliceCount)
+
+  const layout = useMemo(() => {
+    const u = 420
+    // Modest total thickness; many slices → small per-step offset
+    const th = u * 0.038
+    const planeGap = th + u * 0.015 + gap * u * 0.2
+    return { u, th, planeGap }
+  }, [gap])
+
+  const padY = useMemo(() => {
+    const maxZ = layout.th + 1.5 * layout.planeGap
+    return Math.ceil(maxZ * Math.sin(ROTATE_X) + 40)
+  }, [layout])
+
+  // Center the 4-plane stack so explode spreads up AND down (not only up)
+  const planeMid = (LAYERS.length - 1) / 2
+  const focusAnchorY =
+    focusIndex !== null && focusIndex >= 0
+      ? (focusIndex - planeMid) * layout.planeGap * TAN_X
+      : 0
+
+  return (
+    <div
+      role="img"
+      aria-label="Answr logo, layered 3D breakdown"
+      className={`relative flex w-full items-center justify-center ${className ?? ''}`}
+      style={{
+        aspectRatio: '1 / 1.1',
+        paddingTop: padY * 0.4,
+        paddingBottom: padY * 0.4,
+      }}
+    >
+      <svg width={0} height={0} className="absolute" aria-hidden>
+        <defs>
+          {(Object.keys(PATHS) as Array<keyof typeof PATHS>).map((id) => (
+            <path
+              key={id}
+              id={`answr-logo-${id}`}
+              vectorEffect="non-scaling-stroke"
+              d={PATHS[id]}
+            />
+          ))}
+        </defs>
+      </svg>
+
+      <div
+        aria-hidden
+        className="relative"
+        style={{
+          width: 'min(100%, 26rem)',
+          aspectRatio: '1 / 1',
+          transform: `rotate(${rotateZ}deg)`,
+          willChange: scrubbing ? 'transform' : 'auto',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: `scaleY(${COS_X}) translateY(${focusAnchorY}px)`,
+            transformOrigin: 'center center',
+            // focusAnchorY only jumps on discrete focus changes (explode stays
+            // at 1 while a layer is focused), so this eases highlight pans
+            // without lagging scroll-driven explode.
+            transition: 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: scrubbing ? 'transform' : 'auto',
+          }}
+        >
+          {LAYERS.map((layer, k) => {
+            const dimmed =
+              focusIndex !== null && focusIndex >= 0 && k !== focusIndex
+            const planeZ = (k - planeMid) * layout.planeGap
+            const planeTy = -planeZ * TAN_X
+
+            return (
+              <div
+                key={k}
+                className="absolute inset-0"
+                style={{
+                  opacity: dimmed ? 0.18 : 1,
+                  transform: `translateY(${planeTy}px)`,
+                  transition: 'opacity 0.45s ease',
+                  willChange: scrubbing ? 'transform, opacity' : 'auto',
+                  zIndex: k + 1,
+                }}
+              >
+                {Array.from({ length: slices }, (_, i) => {
+                  const isTop = i === slices - 1
+                  const z = (i / (slices - 1)) * layout.th
+                  const ty = -z * TAN_X
+                  return (
+                    <svg
+                      key={i}
+                      viewBox="0 0 1291 1289"
+                      fill={isTop ? layer.top : layer.side}
+                      stroke={
+                        isTop ? layer.edge : hexAlpha(layer.side, 0.22)
+                      }
+                      strokeWidth={1}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        transform: `translateY(${ty}px)`,
+                        zIndex: i,
+                        overflow: 'visible',
+                      }}
+                    >
+                      {layer.ids.map((id) => (
+                        <use key={id} href={`#answr-logo-${id}`} />
+                      ))}
+                    </svg>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}

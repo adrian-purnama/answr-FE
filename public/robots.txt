@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /privacy
+Allow: /docs
+Allow: /login
+Allow: /register
+
+Disallow: /dashboard
+Disallow: /project
+Disallow: /admin
+Disallow: /liveagent
+Disallow: /embed
+Disallow: /payment
+Disallow: /profile
+Disallow: /api-key
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://answr.id/sitemap.xml

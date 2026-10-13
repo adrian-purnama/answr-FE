@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Answr logo in 3D</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f1ede4;--ink:#101826;--mute:#5d6b7d;--line:#d6cfbf;--gold:#cc9c42}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0d12;--ink:#e8e4d8;--mute:#8d99a8;--line:#222b38}}
+:root[data-theme="dark"]{--bg:#0a0d12;--ink:#e8e4d8;--mute:#8d99a8;--line:#222b38}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;background-image:radial-gradient(color-mix(in srgb,var(--ink) 22%,transparent) 1px,transparent 1px);background-size:22px 22px}
+main{max-width:1050px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:clamp(20px,4vw,30px);margin:0 0 4px;letter-spacing:.04em;text-transform:uppercase;font-weight:500}
+.sub{color:var(--mute);margin:0 0 20px;font-size:13px}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:center}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+#stage{position:relative;aspect-ratio:1/1.05;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:pan-y;overflow:hidden}
+#stage:active{cursor:grabbing}
+#world,.layer{position:absolute;transform-style:preserve-3d}
+.layer{left:0;top:0;transition:opacity .4s}
+.layer.dim{opacity:.18}
+.sl{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink);padding:11px 14px;font:inherit;font-size:13px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em}
+.step span{display:none;text-transform:none;letter-spacing:0;color:var(--mute);margin-top:6px;line-height:1.5}
+.step.on{border-color:var(--gold)}
+.step.on span{display:block}
+.ctl{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:12px;color:var(--mute);text-transform:uppercase}
+.ctl input{flex:1;accent-color:var(--gold)}
+</style></head>
+<body><main>
+<h1>Answr / layer stack</h1>
+<p class="sub">Drag the logo to rotate it. Slide to separate the layers.</p>
+<div class="grid">
+<div id="stage"><div id="world"></div></div>
+<div><div class="steps" id="steps"></div>
+<div class="ctl"><span>Stacked</span><input id="ex" type="range" min="0" max="100" value="0" aria-label="Separate layers"><span>Exploded</span></div></div>
+</div></main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<path id="tl" vector-effect="non-scaling-stroke" d="m0.27226,922.32952l-0.272,-589.489c-0.042,-70.664 5.043,-117.006 41.713,-179.666c42.415,-72.479 110.233,-122.575 191.147,-144.74c40.114,-10.988 92.786,-8.092 134.499,-8.083l130.885,-0.007l462.38,0.183c-22.28,7.588 -75.28,9.186 -100.52,11.299c-52.85,4.425 -112.44,21.837 -154.28,55.02c-6.27,4.973 -13.37,9.934 -18.57,15.927c-4.44,4.071 -7.56,7.689 -11.54,12.226c-4.76,1.787 -17.21,20.202 -20.7,25.071c-18.07,25.258 -33.11,61.016 -40.44,91.216c-14.49,59.648 -1.65,147.627 -38.06,198.422c-30.902,43.105 -84.678,55.995 -134.431,58.313c-21.231,0.99 -36.041,0.337 -57.563,3.271c-108.879,14.846 -189.079,73.31 -222.108,180.219c-4.869,15.76 -11.739,55.316 -13.313,71.832c-4.732,49.65 -0.846,104.358 -32.786,146.628c-20.468,27.089 -48.632,39.478 -80.936,47.258c-8.246,1.98 -25.874,3.74 -35.105,5.1z"/>
+<path id="tr" vector-effect="non-scaling-stroke" d="m1118.50426,32.00152c2.36,0.924 4.68,1.933 6.96,3.024c62.44,29.724 124.16,101.216 146.35,166.312c11.9,34.174 18.11,70.07 18.37,106.254c0.08,6.473 0.63,17.374 -2.12,22.956c-13.08,7.731 -81.99,9.316 -101.85,11.811c-13.42,1.685 -29.56,4.274 -43.23,6.458c-17.3,3.252 -60.58,16.29 -74.11,26.296c-24.36,9.526 -52.97,35.006 -70.12,54.856c-46.79,54.155 -61.96,118.397 -65.66,188.443c-1.95,36.921 -3.84,82.064 -25.22,115.08c-52.65,81.283 -149.03,52.706 -227.8,72.919c-15.17,3.915 -31.9,8.363 -46.17,14.237c-106.402,43.795 -156.223,148.362 -155.842,259.172c0.102,29.88 -9.735,84.44 -25.83,110.96c-37.891,62.43 -129.8151,76.1453 -193.9741,79.8653c-23.42,1.34 -9.81277,0.80578 -67.05861,-0.52745c-6.338,0.46 -37.39029,-20.27785 -45.14529,-25.06785c-59.613,-37.11 -105.241,-92.93 -129.741,-158.74c-5.195,-14.28 -8.591,-29.25 -12.077,-44.04c16.465,-3.63 29.988,-4.73 46.311,-7.28c37.162,-5.82 73.376,-20.99 104.431,-42.14c72.411,-49.31 100.018,-121.021 108.272,-205.287c4.765,-50.736 1.773,-103.449 34.155,-146.398c49.167,-66.227 141.137,-49.723 213.241,-63.188c123.448,-23.054 199.068,-116.821 208.668,-240.075c4.1,-52.595 2.32,-113.567 36.72,-157.277c35.51,-45.114 101.35,-52.551 154.78,-53.138c76.16,-2.61 160.55,-32.721 207.69,-95.485z"/>
+<path id="br" vector-effect="non-scaling-stroke" d="m1280.61426,451.65052l9.81,-0.961c-1.11,19.172 -0.06,40.868 0.17,60.189l0.28,90.07l-0.89,333.391c-0.03,28.43 1.13,62.18 -2.23,89.85c-15.26,125.57 -116.84,234.98 -240.83,259.79c-30.07,6.02 -58.52,5.14 -89.05,5.19l-90.92,0.08l-327.023,-0.19l-14.76,-0.33c8.732,-9.54 19.053,-25 25.798,-35.77c17.388,-27.32 29.362,-57.74 35.269,-89.58c11.486,-59.13 4.2,-137.05 35.546,-186.55c47.55,-75.09 140.52,-54.42 217.12,-70.07c120.79,-24.673 192.66,-106.956 208.56,-228.232c7.24,-55.238 -3.21,-109.515 31.05,-159.384c49.83,-72.527 129.23,-53.689 202.1,-67.493z"/>
+<path id="s1" vector-effect="non-scaling-stroke" d="m361.02726,819.32252l111.579,-0.004c0.646,36.604 0.174,74.653 0.203,111.371l-111.595,-0.1l-0.187,-111.267z"/>
+<path id="s2" vector-effect="non-scaling-stroke" d="m588.88926,591.22652c36.705,0.497 74.025,0.264 110.785,0.356c0.68,36.471 0.27,74.258 0.29,110.832c-32.63,-1.447 -77.99,-0.402 -111.125,0.12c-0.852,-36.115 -0.132,-75.056 0.05,-111.308z"/>
+<path id="s3" vector-effect="non-scaling-stroke" d="m818.78426,362.15652c35.94,-0.693 73.47,-0.237 109.48,-0.123l0.16,110.02c-9.98,-0.749 -27.34,-0.177 -37.7,-0.156l-71.96,0.145l0.02,-109.886z"/>
+</defs></svg>
+<script>
+// Edit names and descriptions to match your brand story.
+const L=[
+{n:"Layer 1 · Base plane",d:"The foundation slab that everything sits on. Replace with its meaning.",ids:["br"],top:"#1e3149",side:"#0e1928",edge:"#9fb0c7"},
+{n:"Layer 2 · Middle plane",d:"The plane that wraps the top and right edges. Replace with its meaning.",ids:["tr"],top:"#1e3149",side:"#0e1928",edge:"#9fb0c7"},
+{n:"Layer 3 · Frame plane",d:"The plane that frames the left and top. Replace with its meaning.",ids:["tl"],top:"#1e3149",side:"#0e1928",edge:"#9fb0c7"},
+{n:"Layer 4 · The three dots",d:"The three gold steps travel as one unit, floating above the planes.",ids:["s1","s2","s3"],top:"#cc9c42",side:"#7a5c22",edge:"#f3d89a"}];
+const N=9,$=id=>document.getElementById(id),W=$("world"),st=$("stage"),box=$("steps");
+let u=400,gap=0,tgt=0,rz=-40,cur=-1,raf;
+const els=L.map((l,k)=>{const e=document.createElement("div");e.className="layer";
+ for(let i=0;i<N;i++){const top=i===N-1;e.insertAdjacentHTML("beforeend",
+ `<svg class="sl" viewBox="0 0 1291 1289" data-i="${i}" fill="${top?l.top:l.side}" stroke="${top?l.edge:l.edge+"55"}" stroke-width="1">${l.ids.map(x=>`<use href="#${x}"/>`).join("")}</svg>`)}
+ W.appendChild(e);return e});
+function layout(){u=Math.min(st.clientWidth*.62,420);W.style.width=W.style.height=u+"px";
+ const th=u*.04,g=th+u*.02+gap*u*.3;
+ els.forEach((e,k)=>{e.style.width=e.style.height=u+"px";e.style.transform=`translateZ(${k*g}px)`;
+  [...e.children].forEach((s,i)=>s.style.transform=`translateZ(${i*th/(N-1)}px)`)});
+ W.style.transform=`translateY(${u*.05+(3*g)/2*.9}px) rotateX(58deg) rotateZ(${rz}deg)`}
+function loop(){gap+=(tgt-gap)*.08;if(Math.abs(tgt-gap)<.002)gap=tgt;layout();$("ex").value=gap*100;if(gap!==tgt)raf=requestAnimationFrame(loop)}
+function setG(v){tgt=v;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+["Whole logo",...L.map(l=>l.n)].forEach((n,i)=>{const b=document.createElement("button");b.className="step";
+ b.innerHTML=`${n}<span>${i?L[i-1].d:"Four layers: three planes and one set of gold dots. Pull them apart to read each one."}</span>`;
+ b.onclick=()=>go(i-1);box.appendChild(b)});
+function go(i){cur=i;[...box.children].forEach((c,j)=>c.classList.toggle("on",j===i+1));
+ els.forEach((e,k)=>e.classList.toggle("dim",i>=0&&k!==i));setG(i<0?0:1)}
+let dx=null;st.addEventListener("pointerdown",e=>{dx=e.clientX;st.setPointerCapture(e.pointerId)});
+st.addEventListener("pointermove",e=>{if(dx!==null){rz+=(e.clientX-dx)*.4;dx=e.clientX;layout()}});
+st.addEventListener("pointerup",()=>dx=null);
+$("ex").oninput=e=>{cancelAnimationFrame(raf);gap=tgt=e.target.value/100;layout()};
+addEventListener("resize",layout);
+go(-1);setTimeout(()=>setG(1),500);setTimeout(()=>setG(0),3200);
+</script></body></html>
