@@ -4,7 +4,7 @@ export default function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-white text-[var(--ink)]">
       {/* <video
-        src="/hero%20animation.mp4"
+        src="/hero-animation.mp4"
         autoPlay
         muted
         loop
@@ -27,7 +27,7 @@ export default function HeroSection() {
        
        <div className='flex items-end gap-4 mb-5'>
         <img
-            src="/answr%20logo%20dark.svg"
+            src="/answr-logo-dark.svg"
             alt="Answr"
             className="h-16 w-auto object-contain sm:h-20 lg:h-24"
           />

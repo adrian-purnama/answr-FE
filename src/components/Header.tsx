@@ -120,8 +120,8 @@ export default function Header() {
 
   const logoTo = homeLink.to
   const emailInitial = user?.email?.trim().charAt(0).toUpperCase() || '?'
-  const headerLogoSrc = '/answr%20logo%20dark.svg'
-  const drawerLogoSrc = '/answr%20logo%20dark.svg'
+  const headerLogoSrc = '/answr-logo-dark.svg'
+  const drawerLogoSrc = '/answr-logo-dark.svg'
 
   return (
     <header

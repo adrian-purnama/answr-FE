@@ -131,7 +131,7 @@ export default function EmbedShowcase() {
                   <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <img
-                        src="/answr%20logo%20dark.svg"
+                        src="/answr-logo-dark.svg"
                         alt=""
                         className="h-4 w-auto object-contain"
                       />

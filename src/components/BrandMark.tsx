@@ -44,8 +44,8 @@ export default function BrandMark({
   const styles = SIZE[size]
   const logoSrc =
     variant === 'light'
-      ? '/answr%20logo%20light.svg'
-      : '/answr%20logo%20dark.svg'
+      ? '/answr-logo-light.svg'
+      : '/answr-logo-dark.svg'
   const nameColor = variant === 'light' ? 'var(--paper)' : 'var(--primary)'
 
   return (
