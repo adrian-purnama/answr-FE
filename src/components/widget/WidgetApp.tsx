@@ -32,6 +32,7 @@ import {
   normalizeHomeSettings,
   normalizeLoginPrompt,
   postWidgetFrame,
+  postWidgetLifecycle,
   readStoredWidgetCorner,
   recordPublicWidgetVisit,
   resolveWidgetHostOrigin,
@@ -149,6 +150,15 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
     if (!widget) return
     recordPublicWidgetVisit(publicKey)
   }, [widget, publicKey])
+
+  useEffect(() => {
+    if (loading) return
+    if (error || !widget) {
+      postWidgetLifecycle({ publicKey, status: 'error' })
+      return
+    }
+    postWidgetLifecycle({ publicKey, status: 'ready' })
+  }, [loading, error, widget, publicKey])
 
   // Standalone (not framed): the iframe viewport *is* the viewport.
   useEffect(() => {

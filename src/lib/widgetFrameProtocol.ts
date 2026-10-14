@@ -22,6 +22,9 @@ export const VISITOR_TOKEN_REQUEST_MESSAGE_TYPE =
 /** Host → embed: open or close the widget programmatically. */
 export const WIDGET_COMMAND_MESSAGE_TYPE = 'sapai:widget-command' as const
 
+/** Embed → loader: widget config load finished (success or failure). */
+export const WIDGET_LIFECYCLE_MESSAGE_TYPE = 'sapai:widget-lifecycle' as const
+
 const WIDGET_CORNERS = [
   'bottom-right',
   'bottom-left',
@@ -86,6 +89,14 @@ export type WidgetCommandMessage = {
   type: typeof WIDGET_COMMAND_MESSAGE_TYPE
   publicKey: string
   command: WidgetCommand
+}
+
+export type WidgetLifecycleStatus = 'ready' | 'error'
+
+export type WidgetLifecycleMessage = {
+  type: typeof WIDGET_LIFECYCLE_MESSAGE_TYPE
+  publicKey: string
+  status: WidgetLifecycleStatus
 }
 
 /** Space the widget keeps between its panel/launcher and the viewport edge. */
@@ -156,5 +167,17 @@ export function isVisitorTokenRequestMessage(
   return (
     record.type === VISITOR_TOKEN_REQUEST_MESSAGE_TYPE &&
     typeof record.publicKey === 'string'
+  )
+}
+
+export function isWidgetLifecycleMessage(
+  value: unknown,
+): value is WidgetLifecycleMessage {
+  if (!value || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  return (
+    record.type === WIDGET_LIFECYCLE_MESSAGE_TYPE &&
+    typeof record.publicKey === 'string' &&
+    (record.status === 'ready' || record.status === 'error')
   )
 }

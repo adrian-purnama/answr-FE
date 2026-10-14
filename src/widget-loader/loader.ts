@@ -10,7 +10,9 @@
  *
  * Usage:
  *   <script src="https://app.example.com/widget.js"
- *           data-public-key="YOUR_PUBLIC_KEY"></script>
+ *           data-public-key="YOUR_PUBLIC_KEY"
+ *           data-on-error-load="true"
+ *           data-wait-until-loaded="false"></script>
  */
 
 import {
@@ -22,6 +24,7 @@ import {
   isVisitorTokenRequestMessage,
   isWidgetCorner,
   isWidgetFrameMessage,
+  isWidgetLifecycleMessage,
   type VisitorTokenMessage,
   type WidgetCommand,
   type WidgetCommandMessage,
@@ -134,6 +137,24 @@ function prefersReducedMotion(): boolean {
   )
 }
 
+/** Missing/empty → default; "false"/"0" → false; anything else → true. */
+function readBoolAttr(
+  script: HTMLScriptElement | null,
+  datasetKey: 'onErrorLoad' | 'waitUntilLoaded',
+  defaultValue: boolean,
+): boolean {
+  if (!script) return defaultValue
+  const raw = script.dataset[datasetKey]
+  if (raw == null || raw === '') return defaultValue
+  return raw !== 'false' && raw !== '0'
+}
+
+const HIDDEN_UNTIL_READY_STYLE: Record<string, string> = {
+  visibility: 'hidden',
+  opacity: '0',
+  'pointer-events': 'none',
+}
+
 function mount(parent: HTMLElement, iframe: HTMLIFrameElement): void {
   if (document.body) {
     document.body.appendChild(iframe)
@@ -156,6 +177,8 @@ function init(): void {
     return
   }
   const publicKey: string = configuredKey
+  const onErrorLoad = readBoolAttr(script, 'onErrorLoad', true)
+  const waitUntilLoaded = readBoolAttr(script, 'waitUntilLoaded', false)
 
   if (window.SapAiWidget) return
 
@@ -175,6 +198,7 @@ function init(): void {
   let corner = readCorner(publicKey)
   let tokenRequestHandler: VisitorTokenRequestHandler | null = null
   let resizeTimer: ReturnType<typeof setTimeout> | null = null
+  let revealed = !waitUntilLoaded
 
   /** Closed launcher box; replaced as soon as the widget reports its geometry. */
   function applyGeometry(
@@ -184,6 +208,9 @@ function init(): void {
     fullBleed: boolean,
   ): void {
     applyStyle(iframe, HARDENED_STYLE)
+    if (!revealed) {
+      applyStyle(iframe, HIDDEN_UNTIL_READY_STYLE)
+    }
 
     if (fullBleed) {
       applyStyle(iframe, {
@@ -212,6 +239,16 @@ function init(): void {
     })
   }
 
+  function revealFrame(): void {
+    if (revealed) return
+    revealed = true
+    applyStyle(iframe, {
+      visibility: 'visible',
+      opacity: '1',
+      'pointer-events': 'auto',
+    })
+  }
+
   function postToFrame(
     message: WidgetHostEnvMessage | VisitorTokenMessage | WidgetCommandMessage,
   ): void {
@@ -230,11 +267,35 @@ function init(): void {
     })
   }
 
+  function destroy(): void {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    iframe.removeEventListener('load', sendHostEnv)
+    window.removeEventListener('message', onFrameMessage)
+    window.removeEventListener('resize', onResize)
+    window.removeEventListener('orientationchange', onResize)
+    iframe.remove()
+    delete window.SapAiWidget
+  }
+
   function onFrameMessage(event: MessageEvent): void {
     if (event.origin !== widgetOrigin) return
     if (event.source !== iframe.contentWindow) return
 
     const data: unknown = event.data
+
+    if (isWidgetLifecycleMessage(data)) {
+      if (data.publicKey !== publicKey) return
+      if (data.status === 'ready') {
+        revealFrame()
+        return
+      }
+      if (onErrorLoad) {
+        revealFrame()
+      } else {
+        destroy()
+      }
+      return
+    }
 
     if (isWidgetFrameMessage(data)) {
       const frame: WidgetFrameMessage = data
@@ -296,15 +357,7 @@ function init(): void {
     close() {
       sendCommand('close')
     },
-    destroy() {
-      if (resizeTimer) clearTimeout(resizeTimer)
-      iframe.removeEventListener('load', sendHostEnv)
-      window.removeEventListener('message', onFrameMessage)
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('orientationchange', onResize)
-      iframe.remove()
-      delete window.SapAiWidget
-    },
+    destroy,
   }
 }
 

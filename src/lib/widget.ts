@@ -9,10 +9,12 @@ import {
   WIDGET_PANEL_HEIGHT,
   WIDGET_PANEL_WIDTH,
   WIDGET_FRAME_MESSAGE_TYPE,
+  WIDGET_LIFECYCLE_MESSAGE_TYPE,
   isWidgetCorner,
   type VisitorTokenRequestMessage,
   type WidgetCorner,
   type WidgetFrameMessage,
+  type WidgetLifecycleMessage,
 } from '#/lib/widgetFrameProtocol'
 
 // The wire protocol lives in its own dependency-free module so the host-page
@@ -907,6 +909,17 @@ export function postWidgetFrame(
   if (typeof window === 'undefined' || window.parent === window) return
   const payload: WidgetFrameMessage = {
     type: WIDGET_FRAME_MESSAGE_TYPE,
+    ...message,
+  }
+  window.parent.postMessage(payload, hostMessageTarget())
+}
+
+export function postWidgetLifecycle(
+  message: Omit<WidgetLifecycleMessage, 'type'>,
+): void {
+  if (typeof window === 'undefined' || window.parent === window) return
+  const payload: WidgetLifecycleMessage = {
+    type: WIDGET_LIFECYCLE_MESSAGE_TYPE,
     ...message,
   }
   window.parent.postMessage(payload, hostMessageTarget())

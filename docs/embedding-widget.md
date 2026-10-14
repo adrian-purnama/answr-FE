@@ -27,6 +27,23 @@ Copy the install snippet from your SapAi project → **Widget** settings, or use
 ></script>
 ```
 
+Optional attributes (defaults match today’s behavior):
+
+| Attribute | Default | Meaning |
+| --- | --- | --- |
+| `data-on-error-load` | `true` | `true`: show the “Widget unavailable” card on failure. `false`: hide the iframe (no error UI). |
+| `data-wait-until-loaded` | `false` | `true`: keep the iframe hidden until config load succeeds. `false`: show the loading pulse immediately. |
+
+```html
+<script
+  src="https://YOUR_SAPAI_ORIGIN/widget.js"
+  data-public-key="YOUR_PUBLIC_KEY"
+  data-on-error-load="false"
+  data-wait-until-loaded="true"
+  async
+></script>
+```
+
 Example (local / your origin will differ in production):
 
 ```html

@@ -569,6 +569,39 @@ export default function WidgetConfigurationForm({
           <code className="text-xs">close()</code>, and{' '}
           <code className="text-xs">setVisitorToken(token)</code>.
         </p>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-[var(--ink)]">
+            Optional script attributes
+          </p>
+          <ul className={`list-disc space-y-1.5 pl-5 ${hintClassName}`}>
+            <li>
+              <code className="text-xs">data-on-error-load</code> (default{' '}
+              <code className="text-xs">true</code>) —{' '}
+              <code className="text-xs">true</code>: show the “Widget
+              unavailable” card when the widget fails to load (not found,
+              disabled, domain blocked, etc.).{' '}
+              <code className="text-xs">false</code>: hide the iframe entirely
+              (no error UI).
+            </li>
+            <li>
+              <code className="text-xs">data-wait-until-loaded</code> (default{' '}
+              <code className="text-xs">false</code>) —{' '}
+              <code className="text-xs">true</code>: keep the widget hidden until
+              config load succeeds (no loading pulse).{' '}
+              <code className="text-xs">false</code>: show the loading state
+              immediately.
+            </li>
+          </ul>
+          <pre className="overflow-x-auto rounded-md border border-[var(--line)] bg-[var(--paper)] p-3 text-xs text-[var(--ink)]">
+            {`<script
+  src="${origin}/widget.js"
+  data-public-key="${publicKey}"
+  data-on-error-load="false"
+  data-wait-until-loaded="true"
+  async
+></script>`}
+          </pre>
+        </div>
         <CopyField label="Public key" value={publicKey} />
         <CopyField label="Embed URL" value={embedPath} />
       </WidgetFormSection>
