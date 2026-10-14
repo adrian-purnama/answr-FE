@@ -267,9 +267,30 @@ function init(): void {
     })
   }
 
+  let hostEnvRetryTimer: ReturnType<typeof setInterval> | null = null
+
+  function stopHostEnvRetries(): void {
+    if (hostEnvRetryTimer) {
+      clearInterval(hostEnvRetryTimer)
+      hostEnvRetryTimer = null
+    }
+  }
+
+  /** Keep pinging until the widget is listening (load often fires too early). */
+  function startHostEnvRetries(): void {
+    stopHostEnvRetries()
+    sendHostEnv()
+    let n = 0
+    hostEnvRetryTimer = setInterval(() => {
+      sendHostEnv()
+      if (++n >= 15) stopHostEnvRetries()
+    }, 200)
+  }
+
   function destroy(): void {
     if (resizeTimer) clearTimeout(resizeTimer)
-    iframe.removeEventListener('load', sendHostEnv)
+    stopHostEnvRetries()
+    iframe.removeEventListener('load', startHostEnvRetries)
     window.removeEventListener('message', onFrameMessage)
     window.removeEventListener('resize', onResize)
     window.removeEventListener('orientationchange', onResize)
@@ -286,6 +307,7 @@ function init(): void {
     if (isWidgetLifecycleMessage(data)) {
       if (data.publicKey !== publicKey) return
       if (data.status === 'ready') {
+        stopHostEnvRetries()
         revealFrame()
         return
       }
@@ -310,8 +332,6 @@ function init(): void {
         frame.corner,
         frame.fullBleed || frame.dragging,
       )
-      // Re-sync after React mounts — the iframe `load` host-env can arrive
-      // before the widget's message listener exists.
       sendHostEnv()
       return
     }
@@ -337,7 +357,7 @@ function init(): void {
     corner,
     false,
   )
-  iframe.addEventListener('load', sendHostEnv)
+  iframe.addEventListener('load', startHostEnvRetries)
   window.addEventListener('message', onFrameMessage)
   window.addEventListener('resize', onResize)
   window.addEventListener('orientationchange', onResize)

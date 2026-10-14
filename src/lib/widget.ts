@@ -934,15 +934,6 @@ export function resolveWidgetHostOrigin(): string | null {
   return document.referrer ? originOf(document.referrer) : null
 }
 
-/**
- * postMessage target for host-bound messages. Frame geometry carries nothing
- * sensitive, so an unresolvable origin falls back to `*` rather than leaving
- * the widget stuck at launcher size.
- */
-function hostMessageTarget(): string {
-  return resolveWidgetHostOrigin() ?? '*'
-}
-
 export function postWidgetFrame(
   message: Omit<WidgetFrameMessage, 'type'>,
 ): void {
@@ -951,7 +942,9 @@ export function postWidgetFrame(
     type: WIDGET_FRAME_MESSAGE_TYPE,
     ...message,
   }
-  window.parent.postMessage(payload, hostMessageTarget())
+  // `*` — a wrong hostOrigin target silently drops the message and the
+  // loader never re-sends viewport size (widget stays hidden until resize).
+  window.parent.postMessage(payload, '*')
 }
 
 export function postWidgetLifecycle(
@@ -962,7 +955,7 @@ export function postWidgetLifecycle(
     type: WIDGET_LIFECYCLE_MESSAGE_TYPE,
     ...message,
   }
-  window.parent.postMessage(payload, hostMessageTarget())
+  window.parent.postMessage(payload, '*')
 }
 
 

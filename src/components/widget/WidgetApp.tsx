@@ -206,14 +206,16 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
 
   // Framed: the loader tells us about the host page.
   useEffect(() => {
-    if (!hostOrigin) return
+    if (typeof window === 'undefined' || window.parent === window) return
 
     function onMessage(event: MessageEvent) {
-      if (event.origin !== hostOrigin) return
       const data: unknown = event.data
 
       if (isWidgetHostEnvMessage(data)) {
         if (data.publicKey !== publicKey) return
+        // Loader always sets payload.hostOrigin = parent location.origin.
+        // Accept that even if resolveWidgetHostOrigin() disagrees (www / referrer).
+        if (event.origin !== data.hostOrigin) return
         setViewport({
           width: data.viewportWidth,
           height: data.viewportHeight,
@@ -224,6 +226,7 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
         return
       }
 
+      if (!hostOrigin || event.origin !== hostOrigin) return
       if (isWidgetCommandMessage(data)) {
         if (data.publicKey !== publicKey) return
         if (data.command === 'open') {
@@ -237,6 +240,13 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [hostOrigin, publicKey, hostEnvReady])
+
+  // Never stay hidden forever if host-env is dropped (old loader / cache).
+  useEffect(() => {
+    if (!hostOrigin || hostEnvReady) return
+    const t = window.setTimeout(() => setHostEnvReady(true), 2000)
+    return () => window.clearTimeout(t)
+  }, [hostOrigin, hostEnvReady])
 
   const geometry = widgetGeometry({
     open,
