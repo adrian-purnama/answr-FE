@@ -310,6 +310,9 @@ function init(): void {
         frame.corner,
         frame.fullBleed || frame.dragging,
       )
+      // Re-sync after React mounts — the iframe `load` host-env can arrive
+      // before the widget's message listener exists.
+      sendHostEnv()
       return
     }
 

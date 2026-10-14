@@ -33,6 +33,8 @@ import {
   normalizeLoginPrompt,
   postWidgetFrame,
   postWidgetLifecycle,
+  preloadImageUrls,
+  publicWidgetChromeImageUrls,
   readStoredWidgetCorner,
   recordPublicWidgetVisit,
   resolveWidgetHostOrigin,
@@ -93,6 +95,10 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
   const getSessionIdRef = useRef<() => string | null>(() => null)
 
   const hostOrigin = useMemo(() => resolveWidgetHostOrigin(), [])
+  // Framed embeds must wait for a real host viewport; fallback 1024×768
+  // makes the first open oversized on shorter screens.
+  const [hostEnvReady, setHostEnvReady] = useState(() => !hostOrigin)
+  const [assetsReady, setAssetsReady] = useState(false)
   const open = phase !== 'closed'
 
   const {
@@ -144,12 +150,33 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
     setDragPos(null)
     setHostDragging(false)
     dragRef.current = null
-  }, [publicKey])
+    setHostEnvReady(!hostOrigin)
+    setAssetsReady(false)
+  }, [publicKey, hostOrigin])
 
   useEffect(() => {
     if (!widget) return
     recordPublicWidgetVisit(publicKey)
   }, [widget, publicKey])
+
+  // Preload badge / logo / home background before telling the host we are ready.
+  useEffect(() => {
+    if (loading) return
+    if (error || !widget) {
+      setAssetsReady(true)
+      return
+    }
+    let cancelled = false
+    setAssetsReady(false)
+    void preloadImageUrls(
+      publicWidgetChromeImageUrls(publicKey, widget),
+    ).then(() => {
+      if (!cancelled) setAssetsReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, error, widget, publicKey])
 
   useEffect(() => {
     if (loading) return
@@ -157,14 +184,17 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
       postWidgetLifecycle({ publicKey, status: 'error' })
       return
     }
+    // waitUntilLoaded reveals only on `ready` — wait for viewport + chrome images.
+    if (!hostEnvReady || !assetsReady) return
     postWidgetLifecycle({ publicKey, status: 'ready' })
-  }, [loading, error, widget, publicKey])
+  }, [loading, error, widget, publicKey, hostEnvReady, assetsReady])
 
   // Standalone (not framed): the iframe viewport *is* the viewport.
   useEffect(() => {
     if (hostOrigin) return
     function sync() {
       setViewport({ width: window.innerWidth, height: window.innerHeight })
+      setHostEnvReady(true)
     }
     sync()
     setReducedMotion(
@@ -190,19 +220,23 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
         })
         setReducedMotion(data.reducedMotion)
         setCorner(data.corner)
+        setHostEnvReady(true)
         return
       }
 
       if (isWidgetCommandMessage(data)) {
         if (data.publicKey !== publicKey) return
-        if (data.command === 'open') setPhase((p) => (p === 'closed' ? 'opening' : p))
-        else setPhase((p) => (p === 'closed' ? p : 'closing'))
+        if (data.command === 'open') {
+          setPhase((p) =>
+            p === 'closed' && hostEnvReady ? 'opening' : p,
+          )
+        } else setPhase((p) => (p === 'closed' ? p : 'closing'))
       }
     }
 
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [hostOrigin, publicKey])
+  }, [hostOrigin, publicKey, hostEnvReady])
 
   const geometry = widgetGeometry({
     open,
@@ -401,9 +435,10 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
         return
       }
       setDragPos(null)
+      if (!hostEnvReady) return
       setPhase('opening')
     },
-    [publicKey],
+    [publicKey, hostEnvReady],
   )
 
   // Hidden while the panel is on screen, but fades back in *during* the exit

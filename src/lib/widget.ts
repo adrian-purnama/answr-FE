@@ -584,6 +584,50 @@ export function widgetPublicMediaPath(
   return `${API_BASE_URL}/widgets/public/${encodeURIComponent(publicKey)}/media/${encodeURIComponent(mediaId)}`
 }
 
+/** Badge / logo / home background — the chrome that must paint on first open. */
+export function publicWidgetChromeImageUrls(
+  publicKey: string,
+  widget: PublicWidget,
+): string[] {
+  const home = normalizeHomeSettings(widget.homeSettings)
+  const urls: string[] = []
+  const badge = widget.badgeImage?.trim()
+  if (badge) urls.push(widgetPublicMediaPath(publicKey, badge))
+  if (home.logo.trim()) {
+    urls.push(widgetPublicMediaPath(publicKey, home.logo.trim()))
+  }
+  if (home.backgroundImage.trim()) {
+    urls.push(widgetPublicMediaPath(publicKey, home.backgroundImage.trim()))
+  }
+  return urls
+}
+
+/** Resolve when images are decoded (or fail / time out). Never rejects. */
+export function preloadImageUrls(
+  urls: string[],
+  timeoutMs = 8000,
+): Promise<void> {
+  const unique = [...new Set(urls.filter(Boolean))]
+  if (unique.length === 0 || typeof Image === 'undefined') {
+    return Promise.resolve()
+  }
+  const loadAll = Promise.all(
+    unique.map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          const img = new Image()
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+          img.src = src
+        }),
+    ),
+  ).then(() => undefined)
+  const timeout = new Promise<void>((resolve) => {
+    setTimeout(resolve, timeoutMs)
+  })
+  return Promise.race([loadAll, timeout])
+}
+
 export function widgetPublicLiveAgentMediaPath(
   publicKey: string,
   mediaId: string,
@@ -871,16 +915,12 @@ function originOf(value: string): string | null {
 /**
  * Origin of the page that embedded us.
  *
- * The loader passes it as a query param so it is available before any
- * handshake, and we cross-check it against `document.referrer`, which the
- * browser sets and the host page cannot forge. Returns null when the widget is
- * not framed.
+ * Prefer the loader's `hostOrigin` query param (always matches the page that
+ * posts host-env). Fall back to `document.referrer` when the param is missing.
+ * Returns null when the widget is not framed.
  */
 export function resolveWidgetHostOrigin(): string | null {
   if (typeof window === 'undefined' || window.parent === window) return null
-
-  const referrerOrigin = document.referrer ? originOf(document.referrer) : null
-  if (referrerOrigin) return referrerOrigin
 
   try {
     const claimed = new URL(window.location.href).searchParams
@@ -888,10 +928,10 @@ export function resolveWidgetHostOrigin(): string | null {
       ?.trim()
     if (claimed && isHttpOrigin(claimed)) return claimed
   } catch {
-    return null
+    // fall through to referrer
   }
 
-  return null
+  return document.referrer ? originOf(document.referrer) : null
 }
 
 /**
