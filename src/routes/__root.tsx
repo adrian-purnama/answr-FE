@@ -148,7 +148,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <BrandingProvider>
             <PlanProvider>
               {!isLiveAgent ? (
-                <HostWidgetEmbed publicKey="c3e595a262334d36c91bde6cca787192" />
+                <HostWidgetEmbed publicKey="23d519595cf00ec1266c50b32b4c0b58" />
               ) : null}
               <RootChrome>{children}</RootChrome>
             </PlanProvider>
