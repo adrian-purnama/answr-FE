@@ -407,9 +407,10 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
         moved: false,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
-      setHostDragging(true)
+      // Do NOT full-bleed yet — expanding the iframe on touch-start makes
+      // tiny finger jitter look like a drag and blocks open on mobile.
     },
-    [open],
+    [phase],
   )
 
   const onFabPointerMove = useCallback(
@@ -418,8 +419,13 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
       if (!drag || event.pointerId !== drag.pointerId) return
       const dx = event.clientX - drag.startX
       const dy = event.clientY - drag.startY
-      if (!drag.moved && dx * dx + dy * dy < 64) return
-      drag.moved = true
+      // Touch needs a much larger slop than mouse (~8px).
+      const slopPx = event.pointerType === 'mouse' ? 8 : 24
+      if (!drag.moved && dx * dx + dy * dy < slopPx * slopPx) return
+      if (!drag.moved) {
+        drag.moved = true
+        setHostDragging(true)
+      }
       setDragPos({
         x: event.clientX - drag.offsetX,
         y: event.clientY - drag.offsetY,
@@ -428,8 +434,8 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
     [],
   )
 
-  const onFabPointerUp = useCallback(
-    (event: PointerEvent<HTMLButtonElement>) => {
+  const endFabPointer = useCallback(
+    (event: PointerEvent<HTMLButtonElement>, openIfTap: boolean) => {
       const drag = dragRef.current
       if (!drag || event.pointerId !== drag.pointerId) return
       dragRef.current = null
@@ -445,10 +451,24 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
         return
       }
       setDragPos(null)
-      if (!hostEnvReady) return
+      if (!openIfTap || !hostEnvReady) return
       setPhase('opening')
     },
     [publicKey, hostEnvReady],
+  )
+
+  const onFabPointerUp = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      endFabPointer(event, true)
+    },
+    [endFabPointer],
+  )
+
+  const onFabPointerCancel = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      endFabPointer(event, false)
+    },
+    [endFabPointer],
   )
 
   // Hidden while the panel is on screen, but fades back in *during* the exit
@@ -523,12 +543,13 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
           onPointerDown={onFabPointerDown}
           onPointerMove={onFabPointerMove}
           onPointerUp={onFabPointerUp}
-          onPointerCancel={onFabPointerUp}
+          onPointerCancel={onFabPointerCancel}
           className={cn(
-            'touch-none select-none transition hover:opacity-90',
+            // Fixed box = full badge area is tappable (transparent PNG padding too).
+            'touch-manipulation select-none transition hover:opacity-90',
             dragging ? 'cursor-grabbing' : 'cursor-grab',
             hasBadge
-              ? 'flex max-h-20 max-w-20 items-center justify-center bg-transparent p-0'
+              ? 'flex size-20 items-center justify-center bg-transparent p-0'
               : 'flex size-14 items-center justify-center rounded-full bg-neutral-950 text-white shadow-lg hover:bg-neutral-800',
           )}
           aria-label="Open widget"
@@ -538,7 +559,7 @@ export default function WidgetApp({ publicKey, className }: WidgetAppProps) {
             <img
               src={badgeImageUrl!}
               alt=""
-              className="max-h-20 max-w-20 object-contain"
+              className="pointer-events-none max-h-20 max-w-20 object-contain"
               draggable={false}
             />
           ) : (
